@@ -193,7 +193,7 @@ go run main.go
 
 如果您遇到任何问题或有建议，请：
 
-1. 查看 [Issues](https://github.com/yourusername/image-host/issues)
+1. 查看 [Issues](https://github.com/Ian-J0nes/ian-pichost/issues)
 2. 创建新的 Issue
 3. 联系作者
 
