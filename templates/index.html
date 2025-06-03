@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* 验证模态框样式 */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-container {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .auth-title {
+            font-size: 1.8rem;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .auth-subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #555;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+        }
+
+        .auth-input::placeholder {
+            color: #666;
+            letter-spacing: normal;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4a9eff, #0066cc);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.3);
+        }
+
+        .auth-btn:hover {
+            background: linear-gradient(135deg, #0066cc, #004499);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.4);
+        }
+
+        .auth-btn:disabled {
+            background: #333;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .auth-error {
+            color: #f87171;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            min-height: 20px;
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .main-content.authenticated {
+            display: block;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            min-height: calc(100vh - 80px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 2.5rem;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .upload-area {
+            border: 2px dashed #555;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            margin-bottom: 30px;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4a9eff;
+            background: linear-gradient(145deg, #2d3748, #1a202c);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(74, 158, 255, 0.2);
+        }
+
+        .upload-area input { display: none; }
+
+        .upload-icon {
+            font-size: 64px;
+            color: #4a9eff;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 4px 8px rgba(74, 158, 255, 0.3));
+        }
+
+        .upload-text {
+            color: #b0b0b0;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .upload-text small {
+            display: block;
+            margin-top: 10px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+            display: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+        }
+
+        .result {
+            padding: 18px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .result.success {
+            background: linear-gradient(135deg, #1e3a2e, #2d5a3d);
+            color: #4ade80;
+            border: 1px solid #22c55e;
+        }
+
+        .result.error {
+            background: linear-gradient(135deg, #3a1e1e, #5a2d2d);
+            color: #f87171;
+            border: 1px solid #ef4444;
+        }
+
+        .url-result {
+            display: none;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid #444;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .url-result h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin: 10px 0;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+        }
+
+        .copy-btn {
+            background: linear-gradient(135deg, #4a9eff, #0066cc);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+        }
+
+        .copy-btn:hover {
+            background: linear-gradient(135deg, #0066cc, #004499);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(74, 158, 255, 0.4);
+        }
+
+        .image-list {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+        }
+
+        .image-list h2 {
+            margin-bottom: 25px;
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .image-item {
+            border: 1px solid #444;
+            border-radius: 12px;
+            overflow: hidden;
+            background: linear-gradient(145deg, #333, #2a2a2a);
+            transition: all 0.4s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        .image-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+            border-color: #4a9eff;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .image-item:hover img {
+            transform: scale(1.05);
+        }
+
+        .image-info {
+            padding: 15px;
+            font-size: 13px;
+            color: #b0b0b0;
+            line-height: 1.4;
+        }
+
+        .image-info strong {
+            color: #ffffff;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .image-url {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1a1a1a;
+            padding: 8px;
+            border-radius: 4px;
+            word-break: break-all;
+            cursor: pointer;
+            margin-top: 8px;
+            font-size: 11px;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+        }
+
+        .image-url:hover {
+            background: #333;
+            border-color: #4a9eff;
+            color: #4a9eff;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: #888;
+            font-size: 16px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 50px;
+            border-top: 1px solid #333;
+            color: #666;
+        }
+
+        .footer .signature {
+            font-size: 1.2rem;
+            color: #4a9eff;
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(74, 158, 255, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .footer .subtitle {
+            font-size: 0.9rem;
+            color: #888;
+            margin: 0;
+        }
+
+        /* 顶部密钥状态栏 */
+        .auth-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #1e3a2e, #2d5a3d);
+            color: #4ade80;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            border: 1px solid #22c55e;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.2);
+            z-index: 100;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-status:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            h1 { font-size: 2rem; }
+            .upload-area { padding: 40px 15px; }
+            .image-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+            .copy-btn { padding: 8px 16px; margin-bottom: 10px; }
+            .auth-container { padding: 30px 20px; margin: 20px; }
+            .auth-status { position: static; margin: 20px auto; display: block; width: fit-content; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 验证模态框 -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-container">
+            <div class="auth-title">🔐 访问验证</div>
+            <div class="auth-subtitle">请输入访问密钥以继续使用图床服务</div>
+            <input type="password" 
+                   class="auth-input" 
+                   id="authKeyInput" 
+                   placeholder="请输入访问密钥"
+                   autocomplete="off">
+            <button class="auth-btn" id="authBtn" onclick="authenticate()">验证并进入</button>
+            <div class="auth-error" id="authError"></div>
+        </div>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content" id="mainContent">
+        <!-- 密钥状态指示器 -->
+        <div class="auth-status" id="authStatus" onclick="logout()" title="点击退出登录">
+            🔑 已验证
+        </div>
+
+        <div class="container">
+            <h1>{{.title}}</h1>
+
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-text">
+                    点击或拖拽图片到这里上传
+                    <small>支持 JPG, PNG, GIF, WebP 格式，最大 10MB</small>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+
+            <div class="result" id="result"></div>
+
+            <div class="url-result" id="urlResult">
+                <h3>图片链接</h3>
+                <input type="text" class="url-input" id="imageUrl" readonly>
+                <button class="copy-btn" onclick="copyUrl(event)">复制链接</button>
+                <button class="copy-btn" onclick="openImage()">查看图片</button>
+            </div>
+
+            <div class="image-list">
+                <h2>最近上传的图片</h2>
+                <div class="loading" id="loading">加载中...</div>
+                <div class="image-grid" id="imageGrid"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="signature">Ian·Jones</div>
+            <div class="subtitle">Powered by Go</div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
